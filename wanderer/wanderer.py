@@ -1,4 +1,5 @@
 import random
+from collections import Counter
 
 import Rooms
 
@@ -43,23 +44,31 @@ class GameState:
 class RoomManager:
     def __init__(self, gs):
         self.rooms = {
-            Rooms.Room(gs): 5,
+            Rooms.Room(gs): 1,
             Rooms.Fountain(gs): 1,
             Rooms.Trap(gs): 2,
             Rooms.Treasure(gs): 3,
         }
 
+        self.gs = gs
+
     def get_rand_room(self):
-        kwargs = {
-            'population': list(self.rooms.keys()),  # has to be a list to be sub-scriptable
-            'weights': list(self.rooms.values()),
-        }
-        return random.choices(**kwargs)[0]  # random.choices returns a list, only return first element
+        return Rooms.choice_from_dict(self.rooms)
 
     def move(self):
-        input("[wasd] Where would you like to go next?")
+        c = input("[wasd] to move; [b] for backpack?")
+        if c == 'b':
+            self.view_backpack()
         # discard the input and move randomly instead
         return self.get_rand_room()
+
+    def view_backpack(self):
+        pretty_inv = Counter(self.gs.inventory)
+        for item, count in pretty_inv.most_common():
+            print(f'{count}\t{item}')
+
+        print(f'hp: {self.gs.hp}\twater: {self.gs.water}\tfood: {self.gs.food}\n')
+        return self.move()  # recursion just made the flow easier, no actual recursion algorithm used
 
 
 def main():
@@ -71,7 +80,7 @@ def main():
         while gs.is_alive():  # main game loop
             cur_room = rm.move()  # move to the next room
             print('\n' + cur_room.room_text)
-            cur_room.action()  # asks user for input then makes choice
+            cur_room.update()  # apply effects, asks user for input then makes choice
             gs.do_stats_tick()
 
         print(f'{name} has met their end.')

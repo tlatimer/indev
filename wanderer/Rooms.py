@@ -1,29 +1,27 @@
-from collections import Counter
 import random
 
 import wanderer_strings as ws
 
-room_types = {
-    'empty',
-    'chest',  # loot
-    'feast',  # refill food and water
-    'bed',  # refill hp, save point
-    'trapped',  # lose hp
-    'puzzle',
-}
+
+def choice_from_dict(choice_dict):
+    kwargs = {
+        'population': list(choice_dict.keys()),  # has to be a list to be sub-scriptable
+        'weights': list(choice_dict.values()),
+    }
+    return random.choices(**kwargs)[0]  # random.choices returns a list, we want a value
 
 
 class Room:
     room_text = "There doesn't seem to be anything here.\n"
     global_actions = {
+        # 'i': "Inspect Closer"  # TODO
         'p': "Pass By",
-        'b': "Check Backpack"
     }
 
     def __init__(self, game_state):
         self.gs = game_state
 
-    def action(self):
+    def update(self):
         pass  # override me
 
     def get_choice(self):
@@ -31,15 +29,9 @@ class Room:
             print(f'[{key}]  {text}')
 
         choice = input('?')
-        if choice in self.global_actions:
-            if choice == 'p':
-                return ''
-            elif choice == 'b':  # TODO: move this 'check backpack' somewhere else
-                pretty_inv = Counter(self.gs.inventory)
-                for item, count in pretty_inv.most_common():
-                    print(f'{count}\t{item}')
-                print(f'hp: {self.gs.hp}\twater: {self.gs.water}\tfood: {self.gs.food}\n')
-                return self.get_choice()
+        if choice == 'p':
+            return ''
+
         else:
             return choice
 
@@ -55,9 +47,8 @@ class BlankRoom(Room):
         }
         self.actions.update(self.global_actions)
 
-    def action(self):
-        c = self.get_choice()
-        # do stuff
+    def update(self):
+        c = self.get_choice()  # don't call if there's no interactive prompt
 
 
 class Treasure(Room):
@@ -70,13 +61,9 @@ class Treasure(Room):
         }
         self.actions.update(self.global_actions)
 
-    def action(self):
+    def update(self):
         for _ in range(3):
-            kwargs = {
-                'population': list(ws.items.keys()),  # has to be a list to be sub-scriptable
-                'weights': list(ws.items.values()),
-            }
-            item = random.choices(**kwargs)[0]  # random.choices returns a list, only return first element
+            item = choice_from_dict(ws.items)
             print(f'You found a [{item}]!')
             self.gs.inventory.append(item)
         self.get_choice()
@@ -94,12 +81,11 @@ class Fountain(Room):
         }
         self.actions.update(self.global_actions)
 
-    def action(self):
+    def update(self):
         c = self.get_choice()
         if c == 'f':
-            num_canteens = self.gs.inventory.count('canteen') + self.gs.inventory.count('leaky canteen')
-            max_water = num_canteens * 10
-            self.gs.water = max_water
+            num_canteens = self.gs.inventory.count('canteen') + 0.5 * self.gs.inventory.count('leaky canteen')
+            self.gs.water = int(num_canteens) * 10
         elif c == 'd':
             self.gs.water = max(10, self.gs.water)
 
@@ -114,13 +100,14 @@ class Trap(Room):
         }
         self.actions.update(self.global_actions)
 
-    def action(self):
+    def update(self):
         for _ in range(3):
             canteen_count = self.gs.inventory.count('canteen')
-            arrow_hit = random.choices(
-                ['canteen', 'body', 'miss'],
-                weights=[canteen_count, 3, 5]
-            )[0]  # random.choices returns a list
+            arrow_hit = choice_from_dict({
+                'canteen': canteen_count,
+                'body': 3,
+                'miss': 5,
+            })
 
             if arrow_hit == 'body':
                 self.gs.hp -= 1
@@ -134,3 +121,48 @@ class Trap(Room):
 
         self.get_choice()
 
+
+class Feast(Room):
+    room_text = "You find a lavish feast laid out, with noone else in sight."
+
+    def __init__(self, game_state):
+        super().__init__(game_state)
+
+        self.actions = {
+            'e': 'Eat',
+            'g': 'Gorge',
+        }
+        self.actions.update(self.global_actions)
+
+    def update(self):
+        c = self.get_choice()
+
+
+class Sleep(Room):
+    room_text = "STUFF."
+
+    def __init__(self, game_state):
+        super().__init__(game_state)
+
+        self.actions = {
+            'a': 'Action',
+        }
+        self.actions.update(self.global_actions)
+
+    def update(self):
+        c = self.get_choice()
+
+
+class KeyChest(Treasure):
+    def __init__(self, game_state):
+        super().__init__(game_state)
+        self.color = random.choices(ws.key_colors)
+        self.room_text = f"You find an elaborate chest, with {self.color} jewels gleaming on every edge. It is locked."
+
+        self.actions = {
+            'u': 'Unlock',
+        }
+        self.actions.update(self.global_actions)  # adds pass_by
+
+    def update(self):
+        c = self.get_choice()
