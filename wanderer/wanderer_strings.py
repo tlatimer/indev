@@ -12,4 +12,14 @@ key_colors = [
     'Blue',
 ]
 
+items = {
+    'canteen': 1,
 
+    'Red Key': 1,
+    'Green Key': 2,
+    'Blue Key': 3,
+
+    'gold coin': 1,
+    'silver coin': 5,
+    'copper coin': 10,
+}

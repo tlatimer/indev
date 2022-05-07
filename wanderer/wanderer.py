@@ -4,19 +4,18 @@ import Rooms
 
 
 class GameState:
-    hp = 10
-    water = 10
-    food = 10
-    gold = 0
-    inventory = ['canteen']
-    status_effects = []
-
     def __init__(self, name):
         self.name = name
         random.seed(name)
 
+        self.hp = 10
+        self.water = 10
+        self.food = 10
+        self.inventory = ['canteen']
+        self.status_effects = []
+
     def is_alive(self):
-        if self.hp < 1 or self.water < 1 or self.food < 1:
+        if self.hp < 1:
             return False
         else:
             return True
@@ -42,10 +41,13 @@ class GameState:
 
 
 class RoomManager:
-    rooms = {
-        Rooms.Room(): 5,
-        Rooms.Fountain(): 1
-    }
+    def __init__(self, gs):
+        self.rooms = {
+            Rooms.Room(gs): 5,
+            Rooms.Fountain(gs): 1,
+            Rooms.Trap(gs): 2,
+            Rooms.Treasure(gs): 3,
+        }
 
     def get_rand_room(self):
         kwargs = {
@@ -64,12 +66,13 @@ def main():
     while True:  # outer loop to restart the game after death
         name = input("And your name is?")
         gs = GameState(name)
-        rm = RoomManager()
+        rm = RoomManager(gs)
 
         while gs.is_alive():  # main game loop
             cur_room = rm.move()  # move to the next room
             print('\n' + cur_room.room_text)
-            cur_room.action(gs)  # asks user for input then makes choice
+            cur_room.action()  # asks user for input then makes choice
+            gs.do_stats_tick()
 
         print(f'{name} has met their end.')
 
