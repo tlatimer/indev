@@ -148,18 +148,21 @@ class Feast(Room):
 
 
 class Sleep(Room):
-    room_text = "STUFF."
+    room_text = "You find a guest bedroom, with a lock on the inside of the door and a comfy mattress."
 
     def __init__(self, game_state):
         super().__init__(game_state)
 
         self.actions = {
-            'a': 'Action',
+            's': 'Sleep',
         }
         self.actions.update(self.global_actions)
 
     def update(self):
         c = self.get_choice()
+        if c == 's':
+            self.gs.hp = 10
+            self.gs.food -= 1
 
 
 class KeyChest(Treasure):
