@@ -48,6 +48,7 @@ class RoomManager:
             Rooms.Fountain(gs): 1,
             Rooms.Trap(gs): 2,
             Rooms.Treasure(gs): 3,
+            Rooms.Feast(gs): 2
         }
 
         self.gs = gs

@@ -123,7 +123,7 @@ class Trap(Room):
 
 
 class Feast(Room):
-    room_text = "You find a lavish feast laid out, with noone else in sight."
+    room_text = "You find a lavish feast worthy of a king laid out, with no one else in sight."
 
     def __init__(self, game_state):
         super().__init__(game_state)
@@ -136,6 +136,13 @@ class Feast(Room):
 
     def update(self):
         c = self.get_choice()
+        if c == 'e':
+            print("You eat a healthy share.")
+            self.gs.food = 10
+        elif c == 'g':
+            print("You gorge, like a guilty man at his last meal.")
+            self.gs.food = 12
+            self.gs.hp -= 5
 
 
 class Sleep(Room):
