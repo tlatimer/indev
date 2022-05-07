@@ -40,17 +40,20 @@ class GameState:
             print("You're so hungry...")
             self.hp -= 1
 
+        if self.hp < 5:
+            print("A feeling of unease flows through you")
+
 
 class RoomManager:
     def __init__(self, gs):
         self.rooms = {
             Rooms.Room(gs): 1,
             Rooms.Fountain(gs): 1,
-            Rooms.Trap(gs): 2,
-            Rooms.Treasure(gs): 2,
-            Rooms.Feast(gs): 2
-            Rooms.Sleep(gs): 2
-            Rooms.KeyChest(gs): 2
+            Rooms.Trap(gs): 3,
+            Rooms.Treasure(gs): 4,
+            Rooms.Feast(gs): 2,
+            Rooms.Sleep(gs): 2,
+            Rooms.KeyChest(gs): 2,
         }
 
         self.gs = gs
