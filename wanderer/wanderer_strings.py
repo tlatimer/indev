@@ -5,3 +5,11 @@ room_memory = [
     f"You vaguely remember this room. You think you came from the {dir}.",
     f"You are sure you came from the {dir} last time you were here.",
 ]
+
+key_colors = [
+    'Red',
+    'Green',
+    'Blue',
+]
+
+
