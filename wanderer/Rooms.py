@@ -63,10 +63,12 @@ class Treasure(Room):
 
     def update(self):
         for _ in range(3):
-            item = choice_from_dict(ws.items)
-            print(f'You found a [{item}]!')
-            self.gs.inventory.append(item)
-        self.get_choice()
+            self.get_item()
+
+    def get_item(self):
+        item = choice_from_dict(ws.items)
+        print(f'You found a [{item}]!')
+        self.gs.inventory.append(item)
 
 
 class Fountain(Room):
@@ -173,3 +175,8 @@ class KeyChest(Treasure):
 
     def update(self):
         c = self.get_choice()
+        key_name = f'{ws.key_colors} Key'
+        if c == 'u' and key_name in self.gs.inventory:
+            self.gs.inventory.remove[key_name]
+            for _ in range(10):
+                self.get_item()
