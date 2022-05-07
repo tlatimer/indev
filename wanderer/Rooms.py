@@ -142,9 +142,9 @@ class Feast(Room):
             print("You eat a healthy share.")
             self.gs.food = 10
         elif c == 'g':
-            print("You gorge, like a guilty man at his last meal.")
+            print("You gorge, like a guilty man at his last meal. Enjoy the cholesterol.")
             self.gs.food = 12
-            self.gs.hp -= 5
+            self.gs.hp -= 2
 
 
 class Sleep(Room):
