@@ -28,12 +28,7 @@ class Room:
         for key, text in self.actions.items():
             print(f'[{key}]  {text}')
 
-        choice = input('?')
-        if choice == 'p':
-            return ''
-
-        else:
-            return choice
+        return input('?')
 
 
 class BlankRoom(Room):
@@ -57,9 +52,7 @@ class Treasure(Room):
     def __init__(self, game_state):
         super().__init__(game_state)
 
-        self.actions = {
-        }
-        self.actions.update(self.global_actions)
+        self.actions = self.global_actions
 
     def update(self):
         for _ in range(3):
@@ -71,7 +64,7 @@ class Treasure(Room):
         self.gs.inventory.append(item)
 
 
-class Fountain(Room):
+class Drink(Room):
     room_text = "There is a serene fountain gently bubbling nearby."
 
     def __init__(self, game_state):
@@ -113,13 +106,14 @@ class Trap(Room):
 
             if arrow_hit == 'body':
                 self.gs.hp -= 1
-                print(f"This arrow hits your body! You have {self.gs.hp} hp left.")
+                print(f"An arrow hits your body! You have {self.gs.hp} hp left.")
             elif arrow_hit == 'canteen':
-                print('This arrow struck your backpack and put a hole in a canteen!')
-                self.gs.inventory.remove('canteen')
-                self.gs.inventory.append('leaky canteen')
+                print('An arrow struck your backpack and put a hole in a canteen!')
+                if self.gs.inventory.count('canteen') > 0:
+                    self.gs.inventory.remove('canteen')
+                    self.gs.inventory.append('leaky canteen')
             else:
-                print("This arrow missed.")
+                print("An arrow missed.")
 
         self.get_choice()
 
@@ -168,7 +162,7 @@ class Sleep(Room):
 class KeyChest(Treasure):
     def __init__(self, game_state):
         super().__init__(game_state)
-        self.color = random.choices(ws.key_colors)
+        self.color = random.choices(ws.key_colors)[0]
         self.room_text = f"You find an elaborate chest, with {self.color} jewels gleaming on every edge. It is locked."
 
         self.actions = {
@@ -179,7 +173,10 @@ class KeyChest(Treasure):
     def update(self):
         c = self.get_choice()
         key_name = f'{ws.key_colors} Key'
-        if c == 'u' and key_name in self.gs.inventory:
-            self.gs.inventory.remove[key_name]
-            for _ in range(10):
-                self.get_item()
+        if c == 'u':
+            if key_name in self.gs.inventory:
+                self.gs.inventory.remove[key_name]
+                for _ in range(10):
+                    self.get_item()
+            else:
+                print("You unfortunately don't have the right key.")

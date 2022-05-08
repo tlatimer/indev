@@ -48,11 +48,11 @@ class RoomManager:
     def __init__(self, gs):
         self.rooms = {
             Rooms.Room(gs): 1,
-            Rooms.Fountain(gs): 1,
+            Rooms.Drink(gs): 1,
             Rooms.Trap(gs): 3,
-            Rooms.Treasure(gs): 4,
+            Rooms.Treasure(gs): 5,
             Rooms.Feast(gs): 2,
-            Rooms.Sleep(gs): 2,
+            Rooms.Sleep(gs): 1,
             Rooms.KeyChest(gs): 2,
         }
 
