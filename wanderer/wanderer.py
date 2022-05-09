@@ -1,7 +1,7 @@
 import random
 from collections import Counter
 
-import Rooms
+import Rooms2
 
 
 class GameState:
@@ -13,30 +13,26 @@ class GameState:
         self.water = 10
         self.food = 10
         self.inventory = ['canteen']
-        self.status_effects = []
+        # self.status_effects = []  # TODO
 
     def is_alive(self):
-        if self.hp < 1:
-            return False
-        else:
-            return True
+        return self.hp > 0
 
     def do_stats_tick(self):
-        self.water -= 1
-
         leaky = self.inventory.count('leaky canteen')
         if leaky > 0:
             print("Your canteen is leaking...")
             self.water -= leaky
 
+        self.water -= 1
         if self.water < 0:
             self.water = 0
             print("You're so thirsty...")
             self.hp -= 1
 
-        if self.food > 0:
-            self.food -= 1
-        else:
+        self.water -= 1
+        if self.water < 0:
+            self.water = 0
             print("You're so hungry...")
             self.hp -= 1
 
@@ -45,28 +41,16 @@ class GameState:
 
 
 class RoomManager:
-    def __init__(self, gs):
-        self.rooms = {
-            Rooms.Room(gs): 1,
-            Rooms.Drink(gs): 1,
-            Rooms.Trap(gs): 3,
-            Rooms.Treasure(gs): 5,
-            Rooms.Feast(gs): 2,
-            Rooms.Sleep(gs): 1,
-            Rooms.KeyChest(gs): 2,
-        }
-
-        self.gs = gs
-
-    def get_rand_room(self):
-        return Rooms.choice_from_dict(self.rooms)
+    def __init__(self, game_state):
+        self.gs = game_state
+        self.rt = Rooms2.RoomsTable(game_state)
 
     def move(self):
         c = input("[wasd] to move; [b] for backpack?")
         if c == 'b':
             self.view_backpack()
         # discard the input and move randomly instead
-        return self.get_rand_room()
+        return self.rt.get_rand_room()
 
     def view_backpack(self):
         pretty_inv = Counter(self.gs.inventory)
@@ -85,8 +69,8 @@ def main():
 
         while gs.is_alive():  # main game loop
             cur_room = rm.move()  # move to the next room
-            print('\n' + cur_room.room_text)
-            cur_room.update()  # apply effects, asks user for input then makes choice
+            cur_room.on_entry()
+
             gs.do_stats_tick()
 
         print(f'{name} has met their end.')
