@@ -6,17 +6,25 @@ from glob import glob
 import pandas as pd
 
 
-def find_table_file(filename_prefix):
-    files = glob(fr'C:\Users\*\Downloads\{filename_prefix}*')
-    files += glob(fr'.\{filename_prefix}*')
-    if not files:
-        input(f'No file found for file "{filename_prefix}"'
-              '[Press Enter to Exit]')
-        exit(1)
+def find_file(filename_prefix):
+    """Checks each dir, then if it finds file(s) in that dir returns the most recent one"""
+    patterns = [
+        fr'C:\Users\*\Downloads\{filename_prefix}*',
+        fr'.\{filename_prefix}*',
+    ]
 
-    files.sort(key=os.path.getmtime, reverse=True)
+    for p in patterns:
+        files = glob(p)
+        if files:
+            break
 
-    print(f'Using {files[0]}: modified {os.path.getmtime(files[0])}')
+    assert files  # fails if no files were found
+
+    files.sort(key=getmtime, reverse=True)
+
+    modified_time = datetime.fromtimestamp(getmtime(files[0])).strftime('%Y/%m/%d %a %H:%M:%S')
+    logging.debug(f'Using {files[0]}: modified {modified_time}')
+    # print(f'Using {files[0]}: modified {modified_time}')
     return files[0]
 
 
