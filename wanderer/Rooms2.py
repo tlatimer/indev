@@ -17,7 +17,6 @@ def find_table_file(filename_prefix):
 
     files.sort(key=os.path.getmtime, reverse=True)
 
-    # print(f'Using {files[0]}: modified {os.path.getmtime(files[0])}')
     return files[0]
 
 
