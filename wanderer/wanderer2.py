@@ -5,12 +5,12 @@ from collections import Counter
 import Rooms2
 
 
-# we use the logger to print to the console
+# we use the logger to write to the console
 # Debug    - verbose variable manipulation
 # Info     - long descriptions
 # Warning  - statuses
 # Error    - short descriptions
-# Critical - ?
+# Critical - input prompts
 def init_logger(console_level=logging.INFO):
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
@@ -33,7 +33,7 @@ def init_logger(console_level=logging.INFO):
         logging.Formatter('%(asctime)s | %(message)s', datefmt='%Y/%m/%d %a %H:%M:%S')
     )
     ch.setFormatter(
-        logging.Formatter('%(message)s')
+        logging.Formatter("%(message)s")  # "\\x1b[37m" +
     )
 
     # add the handlers to the logger
@@ -60,23 +60,23 @@ class GameState:
     def do_stat_ticks(self):
         leaky = self.inventory.count('leaky canteen')
         if leaky > 0:
-            print("Your canteen is leaking...")
+            logging.warning("Your canteen is leaking...")
             self.water -= leaky
 
         self.water -= 1
         if self.water < 0:
             self.water = 0
-            print("You're so thirsty...")
+            logging.warning("You're so thirsty...")
             self.hp -= 1
 
         self.food -= 1
         if self.food < 0:
             self.food = 0
-            print("You're so hungry...")
+            logging.warning("You're so hungry...")
             self.hp -= 1
 
         if self.hp < 5:
-            print("A feeling of unease flows through you")
+            logging.warning("A feeling of unease flows through you")
 
 
 class RoomManager:
@@ -85,7 +85,8 @@ class RoomManager:
         self.rt = Rooms2.RoomsTable(game_state)
 
     def move(self):
-        c = input("[wasd] to move; [b] for backpack?")
+        logging.critical("[wasd] to move; [b] for backpack")
+        c = input()
         if c == 'b':
             self.view_backpack()
         # discard the input and move randomly instead
@@ -94,26 +95,27 @@ class RoomManager:
     def view_backpack(self):
         pretty_inv = Counter(self.gs.inventory)
         for item, count in pretty_inv.most_common():
-            print(f'{count}\t{item}')
+            logging.error(f'{count}\t{item}')
 
-        print(f'hp: {self.gs.hp}\twater: {self.gs.water}\tfood: {self.gs.food}\n')
+        logging.error(f'hp: {self.gs.hp}\twater: {self.gs.water}\tfood: {self.gs.food}\n')
         return self.move()  # recursion just made the flow easier, no actual recursion algorithm used
 
 
 def main():
     init_logger(logging.DEBUG)
     while True:  # outer loop to restart the game after death
-        name = input("And your name is?")
+        logging.error("And your name is?")
+        name = input()
         gs = GameState(name)
         rm = RoomManager(gs)
 
         while gs.is_alive():  # main game loop
             cur_room = rm.move()  # move to the next room
-            cur_room.on_entry()
+            cur_room.enter()
 
             gs.do_stat_ticks()
 
-        print(f'{name} has met their end.')
+        logging.error(f'{name} has met their end.')
 
 
 if __name__ == '__main__':

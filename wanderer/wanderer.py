@@ -69,7 +69,7 @@ def main():
 
         while gs.is_alive():  # main game loop
             cur_room = rm.move()  # move to the next room
-            cur_room.on_entry()
+            cur_room.enter()
 
             gs.do_stats_tick()
 
