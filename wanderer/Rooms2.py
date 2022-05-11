@@ -1,5 +1,6 @@
 import logging
-import os
+from datetime import datetime
+from os.path import getmtime
 import random
 from glob import glob
 import pandas as pd
@@ -7,16 +8,25 @@ import pandas as pd
 ITEMS = ['canteen', 'Red Key', 'Green Key', 'Blue Key', 'gold coin', 'silver coin', 'copper coin', 'stray rock']
 
 
-def find_table_file(filename_prefix):
-    files = glob(fr'C:\Users\*\Downloads\{filename_prefix}*')
-    files += glob(fr'.\{filename_prefix}*')
-    if not files:
-        input(f'No file found for file "{filename_prefix}"'
-              '[Press Enter to Exit]')
-        exit(1)
+def find_file(filename_prefix):
+    """Checks each dir, then if it finds file(s) in that dir returns the most recent one"""
+    patterns = [
+        fr'C:\Users\*\Downloads\{filename_prefix}*',
+        fr'.\{filename_prefix}*',
+    ]
 
-    files.sort(key=os.path.getmtime, reverse=True)
+    for p in patterns:
+        files = glob(p)
+        if files:
+            break
 
+    assert files  # fails if no files were found
+
+    files.sort(key=getmtime, reverse=True)
+
+    modified_time = datetime.fromtimestamp(getmtime(files[0])).strftime('%Y/%m/%d %a %H:%M:%S')
+    logging.debug(f'Using {files[0]}: modified {modified_time}')
+    # print(f'Using {files[0]}: modified {modified_time}')
     return files[0]
 
 
@@ -31,7 +41,7 @@ class RoomsTable:
     def __init__(self, game_state):
         self.gs = game_state
 
-        rooms_file = find_table_file('wanderer - rooms')
+        rooms_file = find_file('wanderer - rooms')
         # items_file = find_table_file('wanderer - items')
 
         self.df = pd.read_csv(rooms_file).fillna('')
@@ -53,8 +63,8 @@ class RoomsTable:
 class RoomTemplate:
     def __init__(self, rooms_table, room_name):
         self.data = rooms_table.get_room_data(room_name)
-
         self.gs = rooms_table.gs
+        self.loot = []
 
     def enter(self):
         logging.error(f"\n-={self.data['name']}=-")
@@ -63,13 +73,14 @@ class RoomTemplate:
         self.handle_choice()
 
     def get_choice(self):
-        options = [1, 2, 3]
+        options = [1, 2, 3, 4, 5]
         for i in options:
             col = f'action{i}'
             if self.data[col]:
                 logging.error(f"[{i}] {self.data[col]}")
 
         choice = input()
+        logging.debug(choice)
         if choice not in [str(x) for x in options]:
             logging.critical('Invalid Choice. Try again.')
             self.get_choice()
@@ -79,8 +90,16 @@ class RoomTemplate:
     def handle_choice(self):
         choice = self.get_choice()
         # TODO: overwrite me
-        # TODO: 5 - inspect
         pass
+
+    def inspect(self):
+        pass  # TODO: overwrite me
+
+    def generate_loot(self, max_items):
+        for _ in range(random.randint(2, max_items)):
+            item = random.choice(ITEMS)  # TODO
+            self.loot.append(item)
+            logging.info(f'You see an [{item}]!')
 
 
 class room(RoomTemplate):
@@ -104,11 +123,7 @@ class loot(RoomTemplate):
         if choice == 'Take Loot':
             self.gs.inventory += self.loot
 
-    def generate_loot(self, max_items):
-        for _ in range(random.randint(2, max_items)):
-            item = random.choice(ITEMS)
-            self.loot.append(item)
-            logging.info(f'You see an [{item}]!')
+
 
 
 class keyloot(loot):
@@ -190,7 +205,7 @@ class riddle(RoomTemplate):
         super().__init__(rooms_table, room_name)
 
 
-ROOM_TYPES = {
+ROOM_TYPES = {  # has to be at the bottom or else the classes aren't declared yet
     'room': room,
     'loot': loot,
     'keyloot': keyloot,

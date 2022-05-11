@@ -48,9 +48,9 @@ class GameState:
         self.name = name
         random.seed(name)
 
-        self.hp = 10
-        self.water = 10
-        self.food = 10
+        self.hp = 20
+        self.water = 20
+        self.food = 20
         self.inventory = ['canteen']
         # self.status_effects = []  # TODO
 
@@ -60,23 +60,25 @@ class GameState:
     def do_stat_ticks(self):
         leaky = self.inventory.count('leaky canteen')
         if leaky > 0:
-            logging.warning("Your canteen is leaking...")
             self.water -= leaky
+            logging.warning("Your canteen is leaking...")
 
         self.water -= 1
         if self.water < 0:
             self.water = 0
-            logging.warning("You're so thirsty...")
             self.hp -= 1
+            logging.warning("You're so thirsty...")
 
         self.food -= 1
         if self.food < 0:
             self.food = 0
-            logging.warning("You're so hungry...")
             self.hp -= 1
+            logging.warning("You're so hungry...")
 
         if self.hp < 5:
-            logging.warning("A feeling of unease flows through you")
+            logging.warning("A feeling of unease comes over you")
+
+        logging.debug(f'hp: {self.hp}\twater: {self.water}\tfood: {self.food}\n')
 
 
 class RoomManager:
@@ -86,8 +88,9 @@ class RoomManager:
 
     def move(self):
         logging.critical("[wasd] to move; [b] for backpack")
-        c = input()
-        if c == 'b':
+        choice = input()
+        logging.debug(choice)
+        if choice == 'b':
             self.view_backpack()
         # discard the input and move randomly instead
         return self.rt.get_rand_room()
@@ -106,6 +109,7 @@ def main():
     while True:  # outer loop to restart the game after death
         logging.error("And your name is?")
         name = input()
+        logging.debug(name)
         gs = GameState(name)
         rm = RoomManager(gs)
 
