@@ -6,8 +6,6 @@ from common_funcs import find_file, get_weighted_rand
 
 from Items import ItemsTable
 
-ITEMS = ['canteen', 'Red Key', 'Green Key', 'Blue Key', 'gold coin', 'silver coin', 'copper coin', 'stray rock']
-
 
 class RoomsTable:
     def __init__(self, game_state):
@@ -56,7 +54,7 @@ class RoomTemplate:
         logging.debug(choice)
         if choice not in [str(x) for x in options if x]:
             logging.critical('Invalid Choice. Try again.')
-            choice = self.get_choice()
+            return self.get_choice()
 
         return self.data[f'action{str(choice)}']
 
@@ -112,13 +110,13 @@ class keyloot(loot):
 class trap(RoomTemplate):
     def __init__(self, rooms_table, room_name):
         super().__init__(rooms_table, room_name)
-        self.num_trap = random.randint(2, 10)
+        self.num_traps = random.randint(2, 10)
 
     def enter(self):
         logging.error(f"\n-={self.data['name']}=-")
-        logging.info(f"\n{self.data['entry_text'].format(num=self.num_trap)}")
+        logging.info(f"\n{self.data['entry_text']}")
 
-        for _ in range(self.num_trap):
+        for _ in range(self.num_traps):
             self.fire_trap()
 
     def fire_trap(self):

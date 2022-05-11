@@ -87,6 +87,7 @@ class RoomManager:
     def __init__(self, game_state):
         self.gs = game_state
         self.rt = RoomsTable(game_state)
+        self.it = ItemsTable()
 
     def move(self):
         logging.critical("[wasd] to move; [b] for backpack")
@@ -98,9 +99,7 @@ class RoomManager:
         return self.rt.get_rand_room()
 
     def view_backpack(self):
-        pretty_inv = Counter(self.gs.inventory)
-        for item, count in pretty_inv.most_common():
-            logging.error(f'{count}\t{item}')
+        self.it.view_backpack(self.gs.inventory)
 
         logging.error(f'hp: {self.gs.hp}\twater: {self.gs.water}\tfood: {self.gs.food}\n')
         return self.move()  # recursion just made the flow easier, no actual recursion algorithm used
