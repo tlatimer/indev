@@ -3,7 +3,6 @@ import csv
 from tabulate import tabulate
 
 from collections import Counter
-from pprint import pprint
 
 
 class ItemsTable:

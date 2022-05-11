@@ -1,4 +1,3 @@
-import logging
 import random
 import pandas as pd
 
@@ -38,8 +37,8 @@ class RoomTemplate:
         self.loot = []
 
     def enter(self):
-        logging.error(f"\n-={self.data['name']}=-")
-        logging.info(f"\n{self.data['entry_text']}")
+        print(f"\n-={self.data['name']}=-")
+        print(f"\n{self.data['entry_text']}")
 
         self.handle_choice()
 
@@ -48,12 +47,12 @@ class RoomTemplate:
         for i in options:
             col = f'action{i}'
             if self.data[col]:
-                logging.error(f"[{i}] {self.data[col]}")
+                print(f"[{i}] {self.data[col]}")
 
         choice = input()
-        logging.debug(choice)
+        print(choice)
         if choice not in [str(x) for x in options if x]:
-            logging.critical('Invalid Choice. Try again.')
+            print('Invalid Choice. Try again.')
             return self.get_choice()
 
         return self.data[f'action{str(choice)}']
@@ -70,7 +69,7 @@ class RoomTemplate:
         for _ in range(random.randint(2, max_items)):
             item = self.it.get_rand_item()
             self.loot.append(item)
-            logging.info(f'You see an [{item}]!')
+            print(f'You see an [{item}]!')
 
 
 class room(RoomTemplate):
@@ -78,8 +77,8 @@ class room(RoomTemplate):
         super().__init__(rooms_table, room_name)
 
     def enter(self):
-        logging.error(f"\n-={self.data['name']}=-")
-        logging.info(f"\n{self.data['entry_text']}")
+        print(f"\n-={self.data['name']}=-")
+        print(f"\n{self.data['entry_text']}")
 
 
 class loot(RoomTemplate):
@@ -101,8 +100,8 @@ class keyloot(loot):
         self.color = random.choice(['Red', 'Green', 'Blue'])
 
     def enter(self):
-        logging.error(f"\n-={self.data['name']}=-")
-        logging.info(f"\n{self.data['entry_text'].format(color=self.color)}")
+        print(f"\n-={self.data['name']}=-")
+        print(f"\n{self.data['entry_text'].format(color=self.color)}")
 
         self.handle_choice()
 
@@ -113,8 +112,8 @@ class trap(RoomTemplate):
         self.num_traps = random.randint(2, 10)
 
     def enter(self):
-        logging.error(f"\n-={self.data['name']}=-")
-        logging.info(f"\n{self.data['entry_text']}")
+        print(f"\n-={self.data['name']}=-")
+        print(f"\n{self.data['entry_text']}")
 
         for _ in range(self.num_traps):
             self.fire_trap()
@@ -125,13 +124,13 @@ class trap(RoomTemplate):
 
         if arrow_hit == 'body':
             self.gs.hp -= 1
-            logging.info(f"An arrow hits your body! You have {self.gs.hp} hp left.")
+            print(f"An arrow hits your body! You have {self.gs.hp} hp left.")
         elif arrow_hit == 'canteen':
-            logging.info('An arrow struck your backpack and put a hole in a canteen!')
+            print('An arrow struck your backpack and put a hole in a canteen!')
             self.gs.inventory.remove('canteen')
             self.gs.inventory.append('leaky canteen')
         else:
-            logging.info("An arrow missed.")
+            print("An arrow missed.")
 
 
 class eat(RoomTemplate):
@@ -141,10 +140,10 @@ class eat(RoomTemplate):
     def handle_choice(self):
         choice = self.get_choice()
         if choice == 'Eat':
-            logging.info("You eat a healthy share.")
+            print("You eat a healthy share.")
             self.gs.food = 10
         elif choice == 'Gorge':
-            logging.info("You gorge, like a guilty man at his last meal. Enjoy the cholesterol.")
+            print("You gorge, like a guilty man at his last meal. Enjoy the cholesterol.")
             self.gs.food = 12
             self.gs.hp -= 2
 
