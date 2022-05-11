@@ -2,7 +2,8 @@ import logging.handlers
 import random
 from collections import Counter
 
-import Rooms
+from Rooms import RoomsTable
+from Items import ItemsTable
 
 
 # we use the logger to write to the console
@@ -58,9 +59,10 @@ class GameState:
         return self.hp > 0
 
     def do_stat_ticks(self):
-        leaky = self.inventory.count('leaky canteen')
-        if leaky > 0:
-            self.water -= leaky
+        capacity = self.inventory.count('Canteen') * 10
+        leaky = self.inventory.count('Leaky Canteen')
+        if leaky > 0 and self.water > capacity:
+            self.water = max(self.water - leaky, capacity)
             logging.warning("Your canteen is leaking...")
 
         self.water -= 1
@@ -84,7 +86,7 @@ class GameState:
 class RoomManager:
     def __init__(self, game_state):
         self.gs = game_state
-        self.rt = Rooms.RoomsTable(game_state)
+        self.rt = RoomsTable(game_state)
 
     def move(self):
         logging.critical("[wasd] to move; [b] for backpack")

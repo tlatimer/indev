@@ -1,41 +1,12 @@
 import logging
 import random
-from datetime import datetime
-from glob import glob
-from os.path import getmtime
-
 import pandas as pd
 
+from common_funcs import find_file, get_weighted_rand
+
+from Items import ItemsTable
+
 ITEMS = ['canteen', 'Red Key', 'Green Key', 'Blue Key', 'gold coin', 'silver coin', 'copper coin', 'stray rock']
-
-
-def find_file(filename_prefix):
-    """Checks each dir, then if it finds file(s) in that dir returns the most recent one"""
-    patterns = [
-        fr'C:\Users\*\Downloads\{filename_prefix}*',
-        fr'.\{filename_prefix}*',
-    ]
-
-    for p in patterns:
-        files = glob(p)
-        if files:
-            break
-
-    assert files  # fails if no files were found
-
-    files.sort(key=getmtime, reverse=True)
-
-    modified_time = datetime.fromtimestamp(getmtime(files[0])).strftime('%Y/%m/%d %a %H:%M:%S')
-    logging.debug(f'Using {files[0]}: modified {modified_time}')
-    # print(f'Using {files[0]}: modified {modified_time}')
-    return files[0]
-
-
-def get_weighted_rand(choices, weights):
-    return random.choices(
-        population=choices,
-        weights=weights
-    )[0]  # random.choices returns a list, we want the value
 
 
 class RoomsTable:
@@ -64,7 +35,8 @@ class RoomsTable:
 class RoomTemplate:
     def __init__(self, rooms_table, room_name):
         self.data = rooms_table.get_room_data(room_name)
-        self.gs = rooms_table.gs
+        self.gs = rooms_table.gs  # game_state
+        self.it = ItemsTable()
         self.loot = []
 
     def enter(self):
@@ -82,9 +54,9 @@ class RoomTemplate:
 
         choice = input()
         logging.debug(choice)
-        if choice not in [str(x) for x in options]:
+        if choice not in [str(x) for x in options if x]:
             logging.critical('Invalid Choice. Try again.')
-            self.get_choice()
+            choice = self.get_choice()
 
         return self.data[f'action{str(choice)}']
 
@@ -98,7 +70,7 @@ class RoomTemplate:
 
     def generate_loot(self, max_items):
         for _ in range(random.randint(2, max_items)):
-            item = random.choice(ITEMS)  # TODO
+            item = self.it.get_rand_item()
             self.loot.append(item)
             logging.info(f'You see an [{item}]!')
 
