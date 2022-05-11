@@ -9,9 +9,9 @@ class GameState:
         self.name = name
         random.seed(name)
 
-        self.hp = 20
-        self.water = 20
-        self.food = 20
+        self.hp = 10
+        self.water = 10
+        self.food = 10
         self.inventory = ['canteen']
         # self.status_effects = []  # TODO
 

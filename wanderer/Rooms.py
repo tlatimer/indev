@@ -40,6 +40,10 @@ class RoomTemplate:
         print(f"\n-={self.data['name']}=-")
         print(f"\n{self.data['entry_text']}")
 
+        if self.loot:
+            for item in self.loot:
+                print(f'You see an [{item}]!')
+
         self.handle_choice()
 
     def get_choice(self):
@@ -69,7 +73,6 @@ class RoomTemplate:
         for _ in range(random.randint(2, max_items)):
             item = self.it.get_rand_item()
             self.loot.append(item)
-            print(f'You see an [{item}]!')
 
 
 class room(RoomTemplate):
@@ -80,13 +83,17 @@ class room(RoomTemplate):
         print(f"\n-={self.data['name']}=-")
         print(f"\n{self.data['entry_text']}")
 
+        if self.loot:
+            for item in self.loot:
+                print(f'You see an [{item}]!')
+
 
 class loot(RoomTemplate):
     def __init__(self, rooms_table, room_name):
         super().__init__(rooms_table, room_name)
 
         self.loot = []
-        self.generate_loot(5)
+        self.generate_loot(self.data['max_loot'])
 
     def handle_choice(self):
         choice = self.get_choice()
@@ -103,6 +110,10 @@ class keyloot(loot):
         print(f"\n-={self.data['name']}=-")
         print(f"\n{self.data['entry_text'].format(color=self.color)}")
 
+        if self.loot:
+            for item in self.loot:
+                print(f'You see an [{item}]!')
+
         self.handle_choice()
 
 
@@ -114,6 +125,10 @@ class trap(RoomTemplate):
     def enter(self):
         print(f"\n-={self.data['name']}=-")
         print(f"\n{self.data['entry_text']}")
+
+        if self.loot:
+            for item in self.loot:
+                print(f'You see an [{item}]!')
 
         for _ in range(self.num_traps):
             self.fire_trap()
