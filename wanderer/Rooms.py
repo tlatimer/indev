@@ -95,7 +95,7 @@ class RoomTemplate:
         self.generate_loot(self.data['max_loot'])
 
     def generate_loot(self, max_items):
-        for _ in range(random.randint(2, max_items)):
+        for _ in range(random.randint(2, max_items * 2)):
             item = self.it.get_rand_item()
             self.loot.append(item)
 
@@ -155,6 +155,8 @@ class trap(RoomTemplate):
         for _ in range(self.num_traps):
             self.fire_trap()
             sleep(.5)
+
+        self.handle_choice()
 
     def fire_trap(self):
         canteen_count = self.gs.inventory.count('Canteen')
