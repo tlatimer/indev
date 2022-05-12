@@ -40,6 +40,7 @@ class GameState:
         if self.hp < 5:
             print("A feeling of unease comes over you")
 
+    def print_status(self):
         print(f'hp: {self.hp}\twater: {self.water}\tfood: {self.food}\n')
 
 
@@ -60,6 +61,7 @@ class RoomManager:
 
     def view_backpack(self):
         self.it.view_backpack(self.gs.inventory)
+        self.gs.print_status()
 
         print(f'hp: {self.gs.hp}\twater: {self.gs.water}\tfood: {self.gs.food}\n')
         return self.move()  # recursion just made the flow easier, no actual recursion algorithm used
@@ -78,6 +80,7 @@ def main():
             cur_room.enter()
 
             gs.do_stat_ticks()
+            gs.print_status()
 
         print(f'{name} has met their end.')
 

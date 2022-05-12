@@ -76,6 +76,7 @@ class RoomTemplate:
 
         if choice == 'Take Loot':
             self.gs.inventory += self.loot
+            self.handle_choice()
         elif choice == 'Search+':
             self.inspect()
             self.handle_choice()
@@ -93,9 +94,10 @@ class RoomTemplate:
         print('You spend some extra time searching the area.')
         self.inspected = True
         self.generate_loot(self.data['max_loot'])
+        self.show_loot()
 
     def generate_loot(self, max_items):
-        for _ in range(random.randint(2, max_items * 2)):
+        for _ in range(random.randint(2, int(max_items) * 2)):
             item = self.it.get_rand_item()
             self.loot.append(item)
 
@@ -188,10 +190,10 @@ class eat(RoomTemplate):
         elif choice == 'Eat':
             print("You eat a healthy share.")
             self.gs.food = 10
-        elif choice == 'Gorge':
+        elif choice == 'Gorge+':
             print("You gorge, like a guilty man at his last meal. Enjoy the cholesterol.")
-            self.gs.food = 12
-            self.gs.hp -= 2
+            self.gs.food = 15
+            self.gs.hp -= 1
 
 
 class drink(RoomTemplate):
@@ -208,7 +210,7 @@ class drink(RoomTemplate):
         elif choice == 'Fill Canteens+':
             num_canteens = self.gs.inventory.count('Canteen') + 0.5 * self.gs.inventory.count('Leaky Canteen')
             self.gs.water = int(num_canteens) * 10
-            self.gs.hp -= 1
+            super().handle_choice()
 
 
 class heal(RoomTemplate):
