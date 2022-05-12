@@ -12,7 +12,7 @@ class GameState:
         self.hp = 10
         self.water = 10
         self.food = 10
-        self.inventory = ['canteen']
+        self.inventory = ['canteen'] * 2
         # self.status_effects = []  # TODO
 
     def is_alive(self):

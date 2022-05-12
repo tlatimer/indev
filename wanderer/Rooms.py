@@ -1,9 +1,9 @@
 import random
+
 import pandas as pd
 
-from common_funcs import find_file, get_weighted_rand
-
 from Items import ItemsTable
+from common_funcs import find_file, get_weighted_rand
 
 
 class RoomsTable:
@@ -36,35 +36,56 @@ class RoomTemplate:
         self.it = ItemsTable()
         self.loot = []
 
-    def enter(self):
+    def enter(self, has_choice=True):
         print(f"\n-={self.data['name']}=-")
         print(f"\n{self.data['entry_text']}")
 
         if self.loot:
-            for item in self.loot:
-                print(f'You see an [{item}]!')
+            self.show_loot()
 
-        self.handle_choice()
+        if has_choice:
+            self.handle_choice()
+
+    def show_loot(self):
+        for item in self.loot:
+            print(f'You see an [{item}]!')
 
     def get_choice(self):
-        options = [1, 2, 3, 4, 5]
-        for i in options:
+        options = ['5', '4', '3', '2', '1']
+        for i in options[::-1]:
+            if i == '4' and not self.loot:
+                continue
+
             col = f'action{i}'
             if self.data[col]:
                 print(f"[{i}] {self.data[col]}")
+            else:
+                options.remove(i)
 
-        choice = input()
-        print(choice)
-        if choice not in [str(x) for x in options if x]:
+        choice = input('[#]?')
+
+        if choice not in options:
             print('Invalid Choice. Try again.')
             return self.get_choice()
 
-        return self.data[f'action{str(choice)}']
+        choice_str = self.data[f'action{str(choice)}']
+        return choice_str
 
     def handle_choice(self):
         choice = self.get_choice()
-        # TODO: overwrite me
-        pass
+        if choice[-1] == '+':
+            self.gs.do_stat_ticks()
+
+        if choice == 'Take Loot':
+            self.gs.inventory += self.loot
+        elif choice == 'Inspect+':
+            print('You spend some extra time looking around.')
+            self.inspect()
+        elif choice in ['Leave', 'Turn Around']:
+            pass
+        else:
+            return choice
+        return None
 
     def inspect(self):
         pass  # TODO: overwrite me
@@ -80,41 +101,35 @@ class room(RoomTemplate):
         super().__init__(rooms_table, room_name)
 
     def enter(self):
-        print(f"\n-={self.data['name']}=-")
-        print(f"\n{self.data['entry_text']}")
-
-        if self.loot:
-            for item in self.loot:
-                print(f'You see an [{item}]!')
+        super().enter(False)
 
 
 class loot(RoomTemplate):
     def __init__(self, rooms_table, room_name):
         super().__init__(rooms_table, room_name)
 
-        self.loot = []
         self.generate_loot(self.data['max_loot'])
 
-    def handle_choice(self):
-        choice = self.get_choice()
-        if choice == 'Take Loot':
-            self.gs.inventory += self.loot
 
-
-class keyloot(loot):
+class key_loot(loot):
     def __init__(self, rooms_table, room_name):
         super().__init__(rooms_table, room_name)
         self.color = random.choice(['Red', 'Green', 'Blue'])
 
-    def enter(self):
-        print(f"\n-={self.data['name']}=-")
-        print(f"\n{self.data['entry_text'].format(color=self.color)}")
-
-        if self.loot:
-            for item in self.loot:
-                print(f'You see an [{item}]!')
-
-        self.handle_choice()
+    def handle_choice(self):
+        choice = super().handle_choice()  # returns None if it was handled generically
+        if not choice:
+            return
+        elif choice == 'Unlock':
+            key_name = f'{self.color} Key'
+            if key_name in self.gs.inventory:
+                self.gs.inventory.remove(key_name)
+                self.generate_loot(self.data['max_loot'])
+                self.show_loot()
+                super().handle_choice()
+            else:
+                print(f"You don't have a [{self.color} Key]")
+                super().handle_choice()
 
 
 class trap(RoomTemplate):
@@ -153,8 +168,10 @@ class eat(RoomTemplate):
         super().__init__(rooms_table, room_name)
 
     def handle_choice(self):
-        choice = self.get_choice()
-        if choice == 'Eat':
+        choice = super().handle_choice()  # returns None if it was handled generically
+        if not choice:
+            return
+        elif choice == 'Eat':
             print("You eat a healthy share.")
             self.gs.food = 10
         elif choice == 'Gorge':
@@ -168,8 +185,10 @@ class drink(RoomTemplate):
         super().__init__(rooms_table, room_name)
 
     def handle_choice(self):
-        choice = self.get_choice()
-        if choice == 'Drink':
+        choice = super().handle_choice()  # returns None if it was handled generically
+        if not choice:
+            return
+        elif choice == 'Drink':
             self.gs.water = max(10, self.gs.water)
             self.handle_choice()
         elif choice == 'Fill Canteens':
@@ -191,7 +210,7 @@ class riddle(RoomTemplate):
 ROOM_TYPES = {  # has to be at the bottom or else the classes aren't declared yet
     'room': room,
     'loot': loot,
-    'keyloot': keyloot,
+    'key_loot': key_loot,
     'trap': trap,
     'eat': eat,
     'drink': drink,
