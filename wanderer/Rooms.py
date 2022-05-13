@@ -1,182 +1,235 @@
 import random
+from time import sleep
 
-import wanderer_strings as ws
+import pandas as pd
 
-
-def choice_from_dict(choice_dict):
-    kwargs = {
-        'population': list(choice_dict.keys()),  # has to be a list to be sub-scriptable
-        'weights': list(choice_dict.values()),
-    }
-    return random.choices(**kwargs)[0]  # random.choices returns a list, we want a value
+from Items import ItemsTable
+from common_funcs import find_file, get_weighted_rand
 
 
-class Room:
-    room_text = "There doesn't seem to be anything here.\n"
-    global_actions = {
-        # 'i': "Inspect Closer"  # TODO
-        'p': "Pass By",
-    }
-
+class RoomsTable:
     def __init__(self, game_state):
         self.gs = game_state
 
-    def update(self):
-        pass  # override me
+        rooms_file = find_file('wanderer - rooms')
+
+        self.df = pd.read_csv(rooms_file).fillna('')
+        self.rooms = list(self.df['name'])
+        self.weights = list(self.df['probability'])
+
+    def get_rand_room(self):
+        name = get_weighted_rand(self.rooms, self.weights)
+        data = self.get_room_data(name)
+        return ROOM_TYPES[data['type']](self, name)
+
+    def get_room_data(self, room_name):
+        data = self.df[self.df['name'].str.match(room_name)].to_dict(orient='list')
+        for k, v in data.items():
+            data[k] = v[0]
+        return data
+
+
+class RoomTemplate:
+    def __init__(self, rooms_table, room_name):
+        self.data = rooms_table.get_room_data(room_name)
+        self.gs = rooms_table.gs  # game_state
+        self.it = ItemsTable()
+        self.loot = []
+        self.inspected = False
+        self.entry_text = self.data['entry_text'][:]
+
+    def enter(self, has_choice=True):
+        print(f"\n-={self.data['name']}=-")
+        print(f"\n{self.entry_text}")
+
+        if self.loot:
+            self.show_loot()
+
+        if has_choice:
+            self.handle_choice()
 
     def get_choice(self):
-        for key, text in self.actions.items():
-            print(f'[{key}]  {text}')
+        options = ['5', '4', '3', '2', '1']
+        for i in options[::-1]:
+            if i == '4' and not self.loot:
+                continue
 
-        return input('?')
-
-
-class BlankRoom(Room):
-    room_text = "STUFF."
-
-    def __init__(self, game_state):
-        super().__init__(game_state)
-
-        self.actions = {
-            'a': 'Action',
-        }
-        self.actions.update(self.global_actions)
-
-    def update(self):
-        c = self.get_choice()  # don't call if there's no interactive prompt
-
-
-class Treasure(Room):
-    room_text = "Loot! Sweet, shiny loot!"
-
-    def __init__(self, game_state):
-        super().__init__(game_state)
-
-        self.actions = self.global_actions
-
-    def update(self):
-        for _ in range(3):
-            self.get_item()
-
-    def get_item(self):
-        item = choice_from_dict(ws.items)
-        print(f'You found a [{item}]!')
-        self.gs.inventory.append(item)
-
-
-class Drink(Room):
-    room_text = "There is a serene fountain gently bubbling nearby."
-
-    def __init__(self, game_state):
-        super().__init__(game_state)
-
-        self.actions = {
-            'd': "Drink",
-            'f': "Fill Canteens"
-        }
-        self.actions.update(self.global_actions)
-
-    def update(self):
-        c = self.get_choice()
-        if c == 'f':
-            num_canteens = self.gs.inventory.count('canteen') + 0.5 * self.gs.inventory.count('leaky canteen')
-            self.gs.water = int(num_canteens) * 10
-        elif c == 'd':
-            self.gs.water = max(10, self.gs.water)
-
-
-class Trap(Room):
-    room_text = "As you enter the room, your ankle gets hooked on a tripwire and three arrows shoot at you."
-
-    def __init__(self, game_state):
-        super().__init__(game_state)
-
-        self.actions = {
-        }
-        self.actions.update(self.global_actions)
-
-    def update(self):
-        for _ in range(3):
-            canteen_count = self.gs.inventory.count('canteen')
-            arrow_hit = choice_from_dict({
-                'canteen': canteen_count,
-                'body': 3,
-                'miss': 5,
-            })
-
-            if arrow_hit == 'body':
-                self.gs.hp -= 1
-                print(f"An arrow hits your body! You have {self.gs.hp} hp left.")
-            elif arrow_hit == 'canteen':
-                print('An arrow struck your backpack and put a hole in a canteen!')
-                if self.gs.inventory.count('canteen') > 0:
-                    self.gs.inventory.remove('canteen')
-                    self.gs.inventory.append('leaky canteen')
+            col = f'action{i}'
+            if self.data[col]:
+                print(f"[{i}] {self.data[col]}")
             else:
-                print("An arrow missed.")
+                options.remove(i)
 
-        self.get_choice()
+        choice = input('[#]?')
+
+        if choice not in options:
+            print('Invalid Choice. Try again.')
+            return self.get_choice()
+
+        choice_str = self.data[f'action{str(choice)}']
+        return choice_str
+
+    def handle_choice(self):
+        choice = self.get_choice()
+        if choice[-1] == '+':
+            self.gs.do_stat_ticks()
+
+        if choice == 'Take Loot':
+            self.gs.inventory += self.loot
+            self.handle_choice()
+        elif choice == 'Search+':
+            self.inspect()
+            self.handle_choice()
+        elif choice in ['Leave', 'Turn Around']:
+            pass
+        else:
+            return choice
+        return None
+
+    def inspect(self):
+        if self.inspected:
+            print("You've already searched here")
+            return
+
+        print('You spend some extra time searching the area.')
+        self.inspected = True
+        self.generate_loot(self.data['max_loot'])
+        self.show_loot()
+
+    def generate_loot(self, max_items):
+        for _ in range(random.randint(2, int(max_items) * 2)):
+            item = self.it.get_rand_item()
+            self.loot.append(item)
+
+    def show_loot(self):
+        sleep(.5)
+        for item in self.loot:
+            print(f'You found a [{item}]!')
+            sleep(.5)
 
 
-class Feast(Room):
-    room_text = "You find a lavish feast worthy of a king laid out, with no one else in sight."
+class room(RoomTemplate):
+    def __init__(self, rooms_table, room_name):
+        super().__init__(rooms_table, room_name)
 
-    def __init__(self, game_state):
-        super().__init__(game_state)
+    def enter(self):
+        super().enter(False)
 
-        self.actions = {
-            'e': 'Eat',
-            'g': 'Gorge',
-        }
-        self.actions.update(self.global_actions)
 
-    def update(self):
-        c = self.get_choice()
-        if c == 'e':
+class loot(RoomTemplate):
+    def __init__(self, rooms_table, room_name):
+        super().__init__(rooms_table, room_name)
+
+        self.generate_loot(self.data['max_loot'])
+
+
+class key_loot(loot):
+    def __init__(self, rooms_table, room_name):
+        super().__init__(rooms_table, room_name)
+        self.color = random.choice(['Red', 'Green', 'Blue'])
+        self.entry_text = self.entry_text.replace('???', self.color)
+
+    def handle_choice(self):
+        choice = super().handle_choice()  # returns None if it was handled generically
+        if not choice:
+            return
+        elif choice == 'Unlock':
+            key_name = f'{self.color} Key'
+            if key_name in self.gs.inventory:
+                self.gs.inventory.remove(key_name)
+                self.generate_loot(self.data['max_loot'])
+                self.show_loot()
+                super().handle_choice()
+            else:
+                print(f"You don't have a [{self.color} Key]")
+                super().handle_choice()
+
+
+class trap(RoomTemplate):
+    def __init__(self, rooms_table, room_name):
+        super().__init__(rooms_table, room_name)
+        self.num_traps = random.randint(2, 10)
+
+    def enter(self):
+        super().enter(False)
+
+        sleep(.5)
+        for _ in range(self.num_traps):
+            self.fire_trap()
+            sleep(.5)
+
+        self.handle_choice()
+
+    def fire_trap(self):
+        canteen_count = self.gs.inventory.count('Canteen')
+        arrow_hit = random.choice(['canteen'] * canteen_count
+                                  + ['body'] * 2
+                                  + ['miss'] * 5)
+
+        if arrow_hit == 'body':
+            self.gs.hp -= 1
+            print(f"An arrow hits your body! You have {self.gs.hp} hp left.")
+        elif arrow_hit == 'canteen':
+            print('An arrow struck your backpack and put a hole in a canteen!')
+            self.gs.inventory.remove('Canteen')
+            self.gs.inventory.append('Leaky Canteen')
+        else:
+            print("An arrow missed.")
+
+        self.num_traps = random.randint(2, 10)
+
+
+class eat(RoomTemplate):
+    def __init__(self, rooms_table, room_name):
+        super().__init__(rooms_table, room_name)
+
+    def handle_choice(self):
+        choice = super().handle_choice()  # returns None if it was handled generically
+        if not choice:
+            return
+        elif choice == 'Eat':
             print("You eat a healthy share.")
             self.gs.food = 10
-        elif c == 'g':
+        elif choice == 'Gorge+':
             print("You gorge, like a guilty man at his last meal. Enjoy the cholesterol.")
-            self.gs.food = 12
-            self.gs.hp -= 2
+            self.gs.food = 15
+            self.gs.hp -= 1
 
 
-class Sleep(Room):
-    room_text = "You find a guest bedroom, with a lock on the inside of the door and a comfy mattress."
+class drink(RoomTemplate):
+    def __init__(self, rooms_table, room_name):
+        super().__init__(rooms_table, room_name)
 
-    def __init__(self, game_state):
-        super().__init__(game_state)
-
-        self.actions = {
-            's': 'Sleep',
-        }
-        self.actions.update(self.global_actions)
-
-    def update(self):
-        c = self.get_choice()
-        if c == 's':
-            self.gs.hp = 10
-            self.gs.food -= 1
+    def handle_choice(self):
+        choice = super().handle_choice()  # returns None if it was handled generically
+        if not choice:
+            return
+        elif choice == 'Drink':
+            self.gs.water = max(10, self.gs.water)
+            super().handle_choice()
+        elif choice == 'Fill Canteens+':
+            num_canteens = self.gs.inventory.count('Canteen') + 0.5 * self.gs.inventory.count('Leaky Canteen')
+            self.gs.water = int(num_canteens) * 10
+            super().handle_choice()
 
 
-class KeyChest(Treasure):
-    def __init__(self, game_state):
-        super().__init__(game_state)
-        self.color = random.choices(ws.key_colors)[0]
-        self.room_text = f"You find an elaborate chest, with {self.color} jewels gleaming on every edge. It is locked."
+class heal(RoomTemplate):
+    def __init__(self, rooms_table, room_name):
+        super().__init__(rooms_table, room_name)
 
-        self.actions = {
-            'u': 'Unlock',
-        }
-        self.actions.update(self.global_actions)  # adds pass_by
 
-    def update(self):
-        c = self.get_choice()
-        key_name = f'{ws.key_colors} Key'
-        if c == 'u':
-            if key_name in self.gs.inventory:
-                self.gs.inventory.remove[key_name]
-                for _ in range(10):
-                    self.get_item()
-            else:
-                print("You unfortunately don't have the right key.")
+class riddle(RoomTemplate):
+    def __init__(self, rooms_table, room_name):
+        super().__init__(rooms_table, room_name)
+
+
+ROOM_TYPES = {  # has to be at the bottom or else the classes aren't declared yet
+    'room': room,
+    'loot': loot,
+    'key_loot': key_loot,
+    'trap': trap,
+    'eat': eat,
+    'drink': drink,
+    'heal': heal,
+    'riddle': riddle,
+}
