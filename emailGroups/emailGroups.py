@@ -14,7 +14,7 @@ def main():
 
     else:
         # gotta go get that data
-        group_member_data = getGroupMemberData()
+        group_member_data = get_group_member_data()
         # and then cache it
         with open('data.json', 'w') as jsonOut:
             json.dump(group_member_data, jsonOut)
@@ -23,54 +23,54 @@ def main():
 
 
 def get_group_member_data():
-    service = makeService()
+    service = make_service()
 
-    groupMembers = {}
+    group_members = {}
 
-    groupsAndLengths = getGroupsAndLengths(service)
+    groups_and_lengths = get_groups_and_lengths(service)
 
-    for group, length in groupsAndLengths.items():
-        groupMembers[group] = getGroupMembers(service, group, length)
+    for group, length in groups_and_lengths.items():
+        group_members[group] = get_group_members(service, group, length)
 
-    return groupMembers
+    return group_members
 
 
-def getGroupsAndLengths(service, pageToken=''):
+def get_groups_and_lengths(service, page_token=''):
     """returns a dict of {'group email': expectedLengthOfGroup}"""
-    data = service.groups().list(customer='my_customer', pageToken=pageToken).execute()
+    data = service.groups().list(customer='my_customer', pageToken=page_token).execute()
 
-    groupEmails = {}
+    group_emails = {}
 
     for i in data['groups']:
         if i['directMembersCount'] != '0':
-            groupEmails[i['email']] = i['directMembersCount']
+            group_emails[i['email']] = int(i['directMembersCount'])
         else:
             print(i['email'] + ' has no members!')
 
     if 'nextPageToken' in data:
-        groupEmails.update(getGroupsAndLengths(service, pageToken=data['nextPageToken']))
+        group_emails.update(get_groups_and_lengths(service, page_token=data['nextPageToken']))
 
-    return groupEmails
+    return group_emails
 
 
-def getGroupMembers(service, groupEmail, expectedLength=0, pageToken=''):
-    data = service.members().list(groupKey=groupEmail, pageToken=pageToken).execute()
+def get_group_members(service, group_email, expected_length=0, page_token=''):
+    data = service.members().list(groupKey=group_email, pageToken=page_token).execute()
 
-    print('processing: ' + groupEmail)
+    print('processing: ' + group_email)
 
     assert 'members' in data  # no members in group
-    groupMembers = [i['email'] for i in data['members']]
+    group_members = [i['email'] for i in data['members']]
 
     if 'nextPageToken' in data:
-        groupMembers += getGroupMembers(service, groupEmail, pageToken=data['nextPageToken'])
+        group_members += get_group_members(service, group_email, page_token=data['nextPageToken'])
 
-    if expectedLength != 0 and expectedLength == len(data['members']):
-        raise 'not expected length'
+    if expected_length:  # top level call, not a recursive call
+        assert expected_length == len(group_members)  # not expected length
 
-    return groupMembers
+    return group_members
 
 
-def makeService():
+def make_service():
     scopes = ['https://www.googleapis.com/auth/admin.directory.user.readonly',
               'https://www.googleapis.com/auth/admin.directory.group.readonly']
     store = file.Storage('token.json')
