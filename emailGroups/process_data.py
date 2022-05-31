@@ -32,8 +32,8 @@ class Group:
             if score > self.parent_score:
                 self.parent = name
                 self.parent_score = score
-
-        # other_groups[self.parent].children.append(self.name)
+        if self.parent:
+            other_groups[self.parent].children.append(self.name)
 
 
 if __name__ == '__main__':
