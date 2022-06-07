@@ -1,5 +1,5 @@
-import datetime as dt
 import csv
+import datetime as dt
 
 START_BALANCE = 2117.57
 
@@ -13,7 +13,7 @@ MONTHLY_BILLS = [
     ['comcast', 69.99, 13],
     ['disney', 13.99, 24],
     ['rent', 1010.00, 1],
-    # ['std loan', 37.00, dt.date(0, 1, 0), dt.date(2022, 6, 1],  # TODO
+    ['std loan', 440, 9],
     ['OVH cloud', 7.99, 3],
     ['xfinity mobile', 69.00, 7],
 ]
@@ -54,7 +54,9 @@ def get_monthly_bills():
 
 def get_weekly_bills():
     bills = []
-    last_date = dt.date(TODAY.year + 1, ((TODAY.month + 14) % 12 + 1), 1)
+    last_date = dt.date(TODAY.year + 1,
+                        ((TODAY.month + 14) % 12 + 1),
+                        1)
     for bill in WEEKLY_BILLS:
         cur_date = bill[3]
         while cur_date < last_date - bill[2]:
