@@ -5,7 +5,7 @@ from os.path import getmtime
 
 
 def find_file(filename_prefix):
-    """Checks each dir, then if it finds file(s) in that dir returns the most recent one"""
+    """Checks each direction, then if it finds file(s) in that direction returns the most recent one"""
     patterns = [
         fr'C:\Users\*\Downloads\{filename_prefix}*',
         fr'.\{filename_prefix}*',
